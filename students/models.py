@@ -102,7 +102,6 @@ class StudentProfile(models.Model):
         blank=True,
         verbose_name='یادداشت‌های احراز هویت'
     )
-    )
     
     verification_document = models.FileField(
         upload_to='verification_documents/',
