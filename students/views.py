@@ -14,7 +14,28 @@ def student_profile(request):
     except StudentProfile.DoesNotExist:
         profile = None
     
-    return render(request, 'students/profile.html', {'profile': profile})
+    # محاسبه درصد تکمیل پروفایل
+    profile_completion = 0
+    if profile:
+        fields = [
+            profile.student_id, profile.university, profile.field_of_study,
+            profile.education_level, profile.skills, profile.bio
+        ]
+        completed_fields = sum(1 for field in fields if field)
+        profile_completion = int((completed_fields / len(fields)) * 100)
+    
+    # آمار کاربر
+    active_requests_count = StudentRequest.objects.filter(user=request.user, is_active=True).count()
+    completed_tests_count = StudentTestResult.objects.filter(student=request.user).count()
+    test_results = StudentTestResult.objects.filter(student=request.user).select_related('test')
+    
+    return render(request, 'students/profile.html', {
+        'profile': profile,
+        'profile_completion': profile_completion,
+        'active_requests_count': active_requests_count,
+        'completed_tests_count': completed_tests_count,
+        'test_results': test_results
+    })
 
 
 @login_required
@@ -63,10 +84,17 @@ def personality_tests(request):
     """آزمون‌های شخصیتی"""
     tests = PersonalityTest.objects.filter(is_active=True)
     completed_tests = StudentTestResult.objects.filter(student=request.user).values_list('test_id', flat=True)
+    test_results = StudentTestResult.objects.filter(student=request.user).select_related('test')
+    
+    # محاسبه امتیاز کل
+    total_score = sum(result.score for result in test_results)
     
     return render(request, 'students/tests.html', {
         'tests': tests,
-        'completed_tests': completed_tests
+        'completed_tests': completed_tests,
+        'test_results': test_results,
+        'completed_tests_count': len(completed_tests),
+        'total_score': total_score
     })
 
 
@@ -133,12 +161,42 @@ def student_verification(request):
         return redirect('students:profile')
     
     if request.method == 'POST':
-        form = StudentProfileForm(request.POST, request.FILES, instance=profile)
+        form = StudentVerificationForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'اطلاعات احراز هویت ارسال شد!')
+            profile = form.save(commit=False)
+            profile.verification_status = 'pending'
+            profile.save()
+            
+            # ارسال نوتیفیکیشن به ادمین
+            from notifications.models import Notification
+            Notification.objects.create(
+                user=request.user,
+                title='درخواست احراز هویت جدید',
+                message=f'درخواست احراز هویت از {request.user.get_full_name()} دریافت شد.',
+                notification_type='verification'
+            )
+            
+            messages.success(request, 'درخواست احراز هویت با موفقیت ارسال شد!')
             return redirect('students:verification')
     else:
-        form = StudentProfileForm(instance=profile)
+        form = StudentVerificationForm(instance=profile)
     
     return render(request, 'students/verification.html', {'form': form, 'profile': profile})
+
+
+@login_required
+def resume_builder(request):
+    """رزومه ساز"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        messages.error(request, 'ابتدا پروفایل خود را تکمیل کنید.')
+        return redirect('students:profile')
+    
+    if request.method == 'POST':
+        # در اینجا می‌توانید رزومه را تولید و دانلود کنید
+        # برای سادگی، فقط پیام موفقیت نمایش می‌دهیم
+        messages.success(request, 'رزومه شما با موفقیت تولید شد!')
+        return redirect('students:resume_builder')
+    
+    return render(request, 'students/resume_builder.html', {'profile': profile})

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}نوتیفیکیشن‌ها - پایسیب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>نوتیفیکیشن‌ها</h2>
+    <div>
+        <span class="badge bg-danger me-2">خوانده نشده: {{ unread_count }}</span>
+        <button class="btn btn-outline-primary btn-sm" onclick="markAllAsRead()">
+            <i class="fas fa-check-double me-1"></i>
+            همه را خوانده کن
+        </button>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<ul class="nav nav-tabs mb-4" id="notificationTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+            همه ({{ notifications|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="unread-tab" data-bs-toggle="tab" data-bs-target="#unread" type="button" role="tab">
+            خوانده نشده ({{ unread_count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches" type="button" role="tab">
+            مچینگ‌ها
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+            سیستم
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="notificationTabsContent">
+    <!-- All Notifications -->
+    <div class="tab-pane fade show active" id="all" role="tabpanel">
+        {% if notifications %}
+            <div class="list-group">
+                {% for notification in notifications %}
+                    <div class="list-group-item list-group-item-action {% if not notification.is_read %}bg-light{% endif %}" 
+                         onclick="markAsRead({{ notification.id }})">
+                        <div class="d-flex w-100 justify-content-between">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    {% if notification.notification_type == 'match' %}
+                                        <i class="fas fa-handshake text-success fs-4"></i>
+                                    {% elif notification.notification_type == 'message' %}
+                                        <i class="fas fa-envelope text-primary fs-4"></i>
+                                    {% elif notification.notification_type == 'verification' %}
+                                        <i class="fas fa-id-card text-warning fs-4"></i>
+                                    {% elif notification.notification_type == 'test' %}
+                                        <i class="fas fa-clipboard-check text-info fs-4"></i>
+                                    {% else %}
+                                        <i class="fas fa-bell text-secondary fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ notification.title }}</h6>
+                                    <p class="mb-1">{{ notification.message }}</p>
+                                    <small class="text-muted">{{ notification.created_at|timesince }} پیش</small>
+                                </div>
+                            </div>
+                            <div>
+                                {% if not notification.is_read %}
+                                    <span class="badge bg-danger">جدید</span>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification({{ notification.id }}, event)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bell-slash text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">هیچ نوتیفیکیشنی ندارید</h4>
+                <p class="text-muted">وقتی اتفاق جدیدی بیفتد، اینجا مطلع خواهید شد</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Unread Notifications -->
+    <div class="tab-pane fade" id="unread" role="tabpanel">
+        {% if unread_notifications %}
+            <div class="list-group">
+                {% for notification in unread_notifications %}
+                    <div class="list-group-item list-group-item-action bg-light" 
+                         onclick="markAsRead({{ notification.id }})">
+                        <div class="d-flex w-100 justify-content-between">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    {% if notification.notification_type == 'match' %}
+                                        <i class="fas fa-handshake text-success fs-4"></i>
+                                    {% elif notification.notification_type == 'message' %}
+                                        <i class="fas fa-envelope text-primary fs-4"></i>
+                                    {% elif notification.notification_type == 'verification' %}
+                                        <i class="fas fa-id-card text-warning fs-4"></i>
+                                    {% elif notification.notification_type == 'test' %}
+                                        <i class="fas fa-clipboard-check text-info fs-4"></i>
+                                    {% else %}
+                                        <i class="fas fa-bell text-secondary fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ notification.title }}</h6>
+                                    <p class="mb-1">{{ notification.message }}</p>
+                                    <small class="text-muted">{{ notification.created_at|timesince }} پیش</small>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="badge bg-danger">جدید</span>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification({{ notification.id }}, event)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                <h4 class="text-success mt-3">همه نوتیفیکیشن‌ها خوانده شده‌اند</h4>
+                <p class="text-muted">آفرین! همه پیام‌ها را بررسی کرده‌اید</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Match Notifications -->
+    <div class="tab-pane fade" id="matches" role="tabpanel">
+        <div class="text-center py-5">
+            <i class="fas fa-handshake text-success" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mt-3">نوتیفیکیشن‌های مچینگ</h4>
+            <p class="text-muted">وقتی با شرکت‌ها مچ شوید، اینجا مطلع خواهید شد</p>
+        </div>
+    </div>
+
+    <!-- System Notifications -->
+    <div class="tab-pane fade" id="system" role="tabpanel">
+        <div class="text-center py-5">
+            <i class="fas fa-cog text-info" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mt-3">نوتیفیکیشن‌های سیستم</h4>
+            <p class="text-muted">اطلاعیه‌های مهم سیستم در اینجا نمایش داده می‌شود</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markAsRead(notificationId) {
+    fetch(`/notifications/mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function markAllAsRead() {
+    if (confirm('آیا مطمئن هستید که می‌خواهید همه نوتیفیکیشن‌ها را خوانده کنید؟')) {
+        fetch('/notifications/mark-all-read/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+}
+
+function deleteNotification(notificationId, event) {
+    event.stopPropagation();
+    if (confirm('آیا مطمئن هستید که می‌خواهید این نوتیفیکیشن را حذف کنید؟')) {
+        fetch(`/notifications/delete/${notificationId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+}
+</script>
+{% endblock %}

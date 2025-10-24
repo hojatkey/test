@@ -26,6 +26,7 @@ urlpatterns = [
     path('companies/', include('companies.urls')),
     path('matching/', include('matching.urls')),
     path('notifications/', include('notifications.urls')),
+    path('admin-panel/', include('admin.urls')),
 ]
 
 if settings.DEBUG:

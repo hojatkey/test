@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}آزمون‌های شخصیتی - پایسیب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>آزمون‌های شخصیتی</h2>
+    <div>
+        <span class="badge bg-info me-2">امتیاز شما: {{ total_score }}</span>
+        <span class="badge bg-success">آزمون‌های تکمیل شده: {{ completed_tests_count }}</span>
+    </div>
+</div>
+
+<!-- Test Categories -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-brain text-primary fs-1"></i>
+                <h6 class="mt-2">هوش هیجانی</h6>
+                <small class="text-muted">ارزیابی مهارت‌های اجتماعی</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users text-success fs-1"></i>
+                <h6 class="mt-2">کار تیمی</h6>
+                <small class="text-muted">توانایی همکاری</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line text-info fs-1"></i>
+                <h6 class="mt-2">رهبری</h6>
+                <small class="text-muted">مهارت‌های مدیریتی</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-lightbulb text-warning fs-1"></i>
+                <h6 class="mt-2">خلاقیت</h6>
+                <small class="text-muted">تفکر نوآورانه</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Tests -->
+<div class="row">
+    {% for test in tests %}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ test.name }}</h6>
+                    <div>
+                        {% if test.id in completed_tests %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>
+                                تکمیل شده
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock me-1"></i>
+                                در انتظار
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">{{ test.description }}</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">نوع آزمون:</small>
+                            <p class="mb-0">{{ test.get_test_type_display }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">مدت زمان:</small>
+                            <p class="mb-0">{{ test.duration }} دقیقه</p>
+                        </div>
+                    </div>
+                    
+                    {% if test.id in completed_tests %}
+                        {% for result in test_results %}
+                            {% if result.test.id == test.id %}
+                                <div class="alert alert-success">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>نمره شما: <strong>{{ result.score }}%</strong></span>
+                                        <small>{{ result.completed_at|date:"Y/m/d" }}</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <div class="d-grid">
+                        {% if test.id in completed_tests %}
+                            <a href="{% url 'students:test_result' test.id %}" class="btn btn-outline-success">
+                                <i class="fas fa-eye me-2"></i>
+                                مشاهده نتیجه
+                            </a>
+                        {% else %}
+                            <a href="{% url 'students:take_test' test.id %}" class="btn btn-primary">
+                                <i class="fas fa-play me-2"></i>
+                                شروع آزمون
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-check text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">هیچ آزمونی در دسترس نیست</h4>
+                <p class="text-muted">آزمون‌های جدید به زودی اضافه خواهند شد</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Benefits Section -->
+<div class="card bg-light mt-5">
+    <div class="card-body">
+        <h5 class="card-title">
+            <i class="fas fa-star text-warning me-2"></i>
+            مزایای شرکت در آزمون‌ها
+        </h5>
+        <div class="row">
+            <div class="col-md-4">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>افزایش شانس استخدام</li>
+                    <li><i class="fas fa-check text-success me-2"></i>شناسایی نقاط قوت</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>اولویت در مچینگ</li>
+                    <li><i class="fas fa-check text-success me-2"></i>گواهی معتبر</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>تیک آبی در پروفایل</li>
+                    <li><i class="fas fa-check text-success me-2"></i>نمایش به شرکت‌ها</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

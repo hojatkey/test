@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}احراز هویت دانشجویی - پایسیب{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark text-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-id-card me-2"></i>
+                    احراز هویت دانشجویی
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                {% if profile.verification_status == 'pending' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        درخواست احراز هویت شما در حال بررسی است. لطفاً صبر کنید.
+                    </div>
+                {% elif profile.verification_status == 'approved' %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        تبریک! احراز هویت شما تایید شده است.
+                    </div>
+                {% elif profile.verification_status == 'rejected' %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle me-2"></i>
+                        احراز هویت شما رد شده است. لطفاً مدارک جدید ارسال کنید.
+                    </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <h6>مراحل احراز هویت:</h6>
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="mb-2">
+                                <i class="fas fa-upload text-primary fs-1"></i>
+                            </div>
+                            <h6>1. آپلود مدارک</h6>
+                            <small class="text-muted">مدارک دانشجویی خود را آپلود کنید</small>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-2">
+                                <i class="fas fa-search text-warning fs-1"></i>
+                            </div>
+                            <h6>2. بررسی ادمین</h6>
+                            <small class="text-muted">تیم ما مدارک شما را بررسی می‌کند</small>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-2">
+                                <i class="fas fa-check text-success fs-1"></i>
+                            </div>
+                            <h6>3. تایید نهایی</h6>
+                            <small class="text-muted">احراز هویت شما تایید می‌شود</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if profile.verification_status != 'approved' %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.student_id_document.id_for_label }}" class="form-label">
+                                <i class="fas fa-file-pdf me-2"></i>
+                                کارت دانشجویی یا گواهی اشتغال به تحصیل
+                            </label>
+                            {{ form.student_id_document }}
+                            {% if form.student_id_document.errors %}
+                                <div class="text-danger small">{{ form.student_id_document.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">فرمت‌های مجاز: PDF, JPG, PNG (حداکثر 5 مگابایت)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.national_id_document.id_for_label }}" class="form-label">
+                                <i class="fas fa-id-card me-2"></i>
+                                کارت ملی یا شناسنامه
+                            </label>
+                            {{ form.national_id_document }}
+                            {% if form.national_id_document.errors %}
+                                <div class="text-danger small">{{ form.national_id_document.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.university_email.id_for_label }}" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>
+                                ایمیل دانشگاهی (اختیاری)
+                            </label>
+                            {{ form.university_email }}
+                            {% if form.university_email.errors %}
+                                <div class="text-danger small">{{ form.university_email.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">ایمیل دانشگاهی شما برای تایید سریع‌تر</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.additional_info.id_for_label }}" class="form-label">
+                                <i class="fas fa-comment me-2"></i>
+                                اطلاعات اضافی (اختیاری)
+                            </label>
+                            {{ form.additional_info }}
+                            {% if form.additional_info.errors %}
+                                <div class="text-danger small">{{ form.additional_info.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                ارسال درخواست احراز هویت
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+
+                <!-- Current Documents -->
+                {% if profile.student_id_document or profile.national_id_document %}
+                    <hr class="my-4">
+                    <h6>مدارک ارسال شده:</h6>
+                    <div class="row">
+                        {% if profile.student_id_document %}
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-file-pdf text-danger fs-1"></i>
+                                        <h6 class="mt-2">کارت دانشجویی</h6>
+                                        <a href="{{ profile.student_id_document.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-download me-1"></i>
+                                            دانلود
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if profile.national_id_document %}
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-id-card text-info fs-1"></i>
+                                        <h6 class="mt-2">کارت ملی</h6>
+                                        <a href="{{ profile.national_id_document.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-download me-1"></i>
+                                            دانلود
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <!-- Benefits -->
+                <div class="card bg-light mt-4">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-star text-warning me-2"></i>
+                            مزایای احراز هویت
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><i class="fas fa-check text-success me-2"></i>اولویت در مچینگ با شرکت‌ها</li>
+                            <li><i class="fas fa-check text-success me-2"></i>دسترسی به ویژگی‌های ویژه</li>
+                            <li><i class="fas fa-check text-success me-2"></i>اعتماد بیشتر شرکت‌ها</li>
+                            <li><i class="fas fa-check text-success me-2"></i>تیک آبی در پروفایل</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

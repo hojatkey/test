@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}صفحه مچینگ - پایسیب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>صفحه مچینگ</h2>
+    <div>
+        <span class="badge bg-info me-2">تعداد کاندیدا: {{ candidates|length }}</span>
+        <a href="{% url 'companies:requests' %}" class="btn btn-outline-primary">
+            <i class="fas fa-briefcase me-2"></i>
+            درخواست‌های شغلی
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="card-title">فیلتر کاندیداها</h6>
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">رشته تحصیلی</label>
+                <select name="field" class="form-select">
+                    <option value="">همه رشته‌ها</option>
+                    <option value="computer">کامپیوتر</option>
+                    <option value="electrical">برق</option>
+                    <option value="mechanical">مکانیک</option>
+                    <option value="civil">عمران</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">نوع شغل</label>
+                <select name="job_type" class="form-select">
+                    <option value="">همه انواع</option>
+                    <option value="internship">کارآموزی</option>
+                    <option value="part_time">نیمه‌وقت</option>
+                    <option value="full_time">تمام‌وقت</option>
+                    <option value="project">پروژه‌ای</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">شهر</label>
+                <select name="city" class="form-select">
+                    <option value="">همه شهرها</option>
+                    <option value="tehran">تهران</option>
+                    <option value="isfahan">اصفهان</option>
+                    <option value="shiraz">شیراز</option>
+                    <option value="mashhad">مشهد</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">امتیاز</label>
+                <select name="score" class="form-select">
+                    <option value="">همه امتیازها</option>
+                    <option value="80">بالای 80%</option>
+                    <option value="70">بالای 70%</option>
+                    <option value="60">بالای 60%</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>
+                    جستجو
+                </button>
+                <a href="{% url 'companies:matching' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    پاک کردن فیلترها
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Candidates Grid -->
+{% if candidates %}
+    <div class="row">
+        {% for candidate in candidates %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if candidate.profile_image %}
+                                <img src="{{ candidate.profile_image.url }}" class="rounded-circle me-3" width="50" height="50" alt="تصویر پروفایل">
+                            {% else %}
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ candidate.get_full_name|default:candidate.username }}</h6>
+                                <small class="text-muted">{{ candidate.student_profile.university }}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <span class="badge bg-primary me-1">{{ candidate.student_profile.field_of_study }}</span>
+                            <span class="badge bg-success me-1">{{ candidate.student_profile.get_education_level_display }}</span>
+                            {% if candidate.student_profile.is_verified %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    احراز شده
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>مهارت‌ها:</strong>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for skill in candidate.student_profile.skills_list|slice:":3" %}
+                                    <span class="badge bg-light text-dark">{{ skill }}</span>
+                                {% endfor %}
+                                {% if candidate.student_profile.skills_list|length > 3 %}
+                                    <span class="badge bg-secondary">+{{ candidate.student_profile.skills_list|length|add:"-3" }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">امتیاز مچینگ:</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="width: 60px; height: 8px;">
+                                        <div class="progress-bar bg-success" style="width: {{ candidate.match_score }}%"></div>
+                                    </div>
+                                    <strong>{{ candidate.match_score }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'companies:candidate_detail' candidate.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-2"></i>
+                                مشاهده جزئیات
+                            </a>
+                            <button class="btn btn-success btn-sm" onclick="selectCandidate({{ candidate.id }})">
+                                <i class="fas fa-check me-2"></i>
+                                انتخاب کاندیدا
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if candidates.has_other_pages %}
+        <nav aria-label="صفحه‌بندی کاندیداها">
+            <ul class="pagination justify-content-center">
+                {% if candidates.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ candidates.previous_page_number }}">قبلی</a>
+                    </li>
+                {% endif %}
+                
+                {% for num in candidates.paginator.page_range %}
+                    {% if candidates.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if candidates.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ candidates.next_page_number }}">بعدی</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-search text-muted" style="font-size: 4rem;"></i>
+        <h4 class="text-muted mt-3">هیچ کاندیدایی یافت نشد</h4>
+        <p class="text-muted">لطفاً فیلترهای جستجو را تغییر دهید یا درخواست شغلی جدید ایجاد کنید</p>
+        <a href="{% url 'companies:create_job_request' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>
+            ایجاد درخواست شغلی جدید
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectCandidate(candidateId) {
+    if (confirm('آیا مطمئن هستید که می‌خواهید این کاندیدا را انتخاب کنید؟')) {
+        // در اینجا درخواست AJAX برای انتخاب کاندیدا ارسال می‌شود
+        fetch(`/companies/select-candidate/${candidateId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('کاندیدا با موفقیت انتخاب شد!');
+                location.reload();
+            } else {
+                alert('خطا در انتخاب کاندیدا: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در انتخاب کاندیدا');
+        });
+    }
+}
+</script>
+{% endblock %}

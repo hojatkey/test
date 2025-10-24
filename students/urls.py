@@ -13,4 +13,5 @@ urlpatterns = [
     path("files/", views.student_files, name="files"),
     path("files/upload/", views.upload_file, name="upload_file"),
     path("verification/", views.student_verification, name="verification"),
+    path("resume-builder/", views.resume_builder, name="resume_builder"),
 ]

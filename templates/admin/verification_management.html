@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}مدیریت احراز هویت - پنل ادمین{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>مدیریت احراز هویت دانشجویان</h2>
+    <div>
+        <span class="badge bg-warning me-2">در انتظار: {{ pending_count }}</span>
+        <span class="badge bg-success me-2">تایید شده: {{ approved_count }}</span>
+        <span class="badge bg-danger me-2">رد شده: {{ rejected_count }}</span>
+    </div>
+</div>
+
+<!-- فیلترها -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">وضعیت</label>
+                <select name="status" class="form-select">
+                    <option value="">همه وضعیت‌ها</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>در انتظار</option>
+                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>تایید شده</option>
+                    <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>رد شده</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">دانشگاه</label>
+                <input type="text" class="form-control" name="university" value="{{ request.GET.university }}" placeholder="نام دانشگاه">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">تاریخ از</label>
+                <input type="date" class="form-control" name="date_from" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">تاریخ تا</label>
+                <input type="date" class="form-control" name="date_to" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>
+                    جستجو
+                </button>
+                <a href="{% url 'admin:verification' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    پاک کردن فیلترها
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- لیست درخواست‌ها -->
+<div class="card">
+    <div class="card-body">
+        {% if verification_requests %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>دانشجو</th>
+                            <th>دانشگاه</th>
+                            <th>رشته</th>
+                            <th>تاریخ درخواست</th>
+                            <th>وضعیت</th>
+                            <th>مدارک</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in verification_requests %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if request.profile_image %}
+                                            <img src="{{ request.profile_image.url }}" class="rounded-circle me-2" width="40" height="40" alt="تصویر پروفایل">
+                                        {% else %}
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0">{{ request.user.get_full_name|default:request.user.username }}</h6>
+                                            <small class="text-muted">{{ request.user.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ request.university }}</td>
+                                <td>{{ request.field_of_study }}</td>
+                                <td>{{ request.updated_at|date:"Y/m/d" }}</td>
+                                <td>
+                                    {% if request.verification_status == 'pending' %}
+                                        <span class="badge bg-warning">در انتظار</span>
+                                    {% elif request.verification_status == 'approved' %}
+                                        <span class="badge bg-success">تایید شده</span>
+                                    {% elif request.verification_status == 'rejected' %}
+                                        <span class="badge bg-danger">رد شده</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">ارسال نشده</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if request.student_id_document %}
+                                            <a href="{{ request.student_id_document.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if request.national_id_document %}
+                                            <a href="{{ request.national_id_document.url }}" target="_blank" class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-id-card"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success btn-sm" onclick="approveVerification({{ request.id }})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="rejectVerification({{ request.id }})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button class="btn btn-info btn-sm" onclick="viewDetails({{ request.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-check text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">هیچ درخواست احراز هویتی یافت نشد</h4>
+                <p class="text-muted">درخواست‌های جدید اینجا نمایش داده می‌شوند</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
