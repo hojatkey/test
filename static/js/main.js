@@ -1,176 +1,416 @@
-// JavaScript اصلی پایسیب
+// Main JavaScript for PYSIB Platform
 
-document.addEventListener("DOMContentLoaded", function() {
-    // انیمیشن‌های ورودی
-    const cards = document.querySelectorAll(".card");
-    cards.forEach((card, index) => {
-        card.style.opacity = "0";
-        card.style.transform = "translateY(20px)";
-        
-        setTimeout(() => {
-            card.style.transition = "all 0.5s ease";
-            card.style.opacity = "1";
-            card.style.transform = "translateY(0)";
-        }, index * 100);
-    });
-    
-    // مدیریت فرم‌ها
-    const forms = document.querySelectorAll("form");
-    forms.forEach(form => {
-        form.addEventListener("submit", function(e) {
-            const submitBtn = form.querySelector("button[type=\"submit\"]");
-            if (submitBtn) {
-                submitBtn.innerHTML = "<span class=\"loading\"></span> در حال پردازش...";
-                submitBtn.disabled = true;
-            }
-        });
-    });
-    
-    // مدیریت انتخاب فایل
-    const fileInputs = document.querySelectorAll("input[type=\"file\"]");
-    fileInputs.forEach(input => {
-        input.addEventListener("change", function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const preview = document.getElementById("file-preview");
-                if (preview) {
-                    preview.innerHTML = `
-                        <div class="file-preview">
-                            <i class="fas fa-file-upload fa-3x text-primary mb-3"></i>
-                            <p class="mb-0">${file.name}</p>
-                            <small class="text-muted">${formatFileSize(file.size)}</small>
-                        </div>
-                    `;
-                }
-            }
-        });
-    });
-    
-    // مدیریت مچینگ کارت‌ها
-    const matchCards = document.querySelectorAll(".match-card");
-    matchCards.forEach(card => {
-        card.addEventListener("click", function() {
-            // حذف انتخاب قبلی
-            matchCards.forEach(c => c.classList.remove("selected"));
-            
-            // انتخاب کارت فعلی
-            this.classList.add("selected");
-            
-            // نمایش جزئیات
-            const studentId = this.dataset.studentId;
-            if (studentId) {
-                showStudentDetails(studentId);
-            }
-        });
-    });
-    
-    // مدیریت فیلترها
-    const filterInputs = document.querySelectorAll(".filter-input");
-    filterInputs.forEach(input => {
-        input.addEventListener("input", debounce(function() {
-            filterResults();
-        }, 300));
-    });
-    
-    // مدیریت نوتیفیکیشن‌ها
-    const notificationBell = document.querySelector(".notification-bell");
-    if (notificationBell) {
-        notificationBell.addEventListener("click", function() {
-            markAllNotificationsAsRead();
-        });
-    }
-    
-    // مدیریت مدال‌ها
-    const modals = document.querySelectorAll(".modal");
-    modals.forEach(modal => {
-        modal.addEventListener("show.bs.modal", function() {
-            // انیمیشن ورود مدال
-            this.querySelector(".modal-dialog").style.transform = "scale(0.8)";
-            this.querySelector(".modal-dialog").style.transition = "transform 0.3s ease";
-            
-            setTimeout(() => {
-                this.querySelector(".modal-dialog").style.transform = "scale(1)";
-            }, 10);
-        });
-    });
-    
-    // مدیریت اسکرول نرم
-    const smoothScrollLinks = document.querySelectorAll("a[href^=\"#\"]");
-    smoothScrollLinks.forEach(link => {
-        link.addEventListener("click", function(e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute("href"));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-            }
-        });
-    });
-    
-    // مدیریت تایپ کردن در جستجو
-    const searchInputs = document.querySelectorAll(".search-input");
-    searchInputs.forEach(input => {
-        input.addEventListener("input", debounce(function() {
-            performSearch(this.value);
-        }, 500));
-    });
-    
-    // مدیریت انتخاب چندگانه
-    const checkboxes = document.querySelectorAll(".select-item");
-    const selectAllCheckbox = document.querySelector(".select-all");
-    
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener("change", function() {
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            updateSelectionCount();
-        });
-    }
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener("change", function() {
-            updateSelectionCount();
-        });
-    });
-    
-    // مدیریت آپلود فایل با پیش‌نمایش
-    const dropZones = document.querySelectorAll(".drop-zone");
-    dropZones.forEach(zone => {
-        zone.addEventListener("dragover", function(e) {
-            e.preventDefault();
-            this.classList.add("drag-over");
-        });
-        
-        zone.addEventListener("dragleave", function(e) {
-            e.preventDefault();
-            this.classList.remove("drag-over");
-        });
-        
-        zone.addEventListener("drop", function(e) {
-            e.preventDefault();
-            this.classList.remove("drag-over");
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileUpload(files[0]);
-            }
-        });
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all components
+    initNotifications();
+    initFileUpload();
+    initMatching();
+    initForms();
+    initAnimations();
 });
 
-// توابع کمکی
+// Notification System
+function initNotifications() {
+    // Mark notification as read when clicked
+    document.querySelectorAll('.notification-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const notificationId = this.dataset.notificationId;
+            markNotificationAsRead(notificationId);
+        });
+    });
 
-function formatFileSize(bytes) {
-    if (bytes === 0) return "0 Bytes";
+    // Real-time notification updates
+    if (typeof(EventSource) !== "undefined") {
+        const eventSource = new EventSource('/notifications/stream/');
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            showNotification(data);
+            updateNotificationBadge();
+        };
+    }
+}
+
+function markNotificationAsRead(notificationId) {
+    fetch(`/notifications/mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateNotificationUI(notificationId);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function showNotification(data) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas fa-bell me-2"></i>
+        ${data.message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
     
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    document.body.appendChild(notification);
     
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+function updateNotificationBadge() {
+    fetch('/notifications/unread-count/')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                badge.textContent = data.count;
+                badge.style.display = data.count > 0 ? 'flex' : 'none';
+            }
+        });
+}
+
+// File Upload System
+function initFileUpload() {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                validateFile(file, this);
+                showFilePreview(file, this);
+            }
+        });
+    });
+
+    // Drag and drop functionality
+    const dropZones = document.querySelectorAll('.file-upload');
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', handleDragOver);
+        zone.addEventListener('dragleave', handleDragLeave);
+        zone.addEventListener('drop', handleDrop);
+    });
+}
+
+function validateFile(file, input) {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    
+    if (file.size > maxSize) {
+        showAlert('حجم فایل نباید بیشتر از 5 مگابایت باشد', 'danger');
+        input.value = '';
+        return false;
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+        showAlert('فرمت فایل مجاز نیست. فقط JPG، PNG، GIF و PDF مجاز است', 'danger');
+        input.value = '';
+        return false;
+    }
+    
+    return true;
+}
+
+function showFilePreview(file, input) {
+    const preview = document.createElement('div');
+    preview.className = 'file-preview mt-2';
+    
+    if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.className = 'img-thumbnail';
+        img.style.maxWidth = '200px';
+        preview.appendChild(img);
+    } else {
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-file-pdf text-danger fs-1';
+        preview.appendChild(icon);
+    }
+    
+    const fileName = document.createElement('p');
+    fileName.textContent = file.name;
+    fileName.className = 'small text-muted mt-2';
+    preview.appendChild(fileName);
+    
+    input.parentNode.appendChild(preview);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    const input = e.currentTarget.querySelector('input[type="file"]');
+    
+    if (files.length > 0) {
+        input.files = files;
+        input.dispatchEvent(new Event('change'));
+    }
+}
+
+// Matching System
+function initMatching() {
+    // Filter candidates
+    const filterForm = document.querySelector('#candidate-filter');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            filterCandidates();
+        });
+    }
+
+    // Select candidate
+    document.querySelectorAll('.select-candidate-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const candidateId = this.dataset.candidateId;
+            selectCandidate(candidateId);
+        });
+    });
+}
+
+function filterCandidates() {
+    const formData = new FormData(document.querySelector('#candidate-filter'));
+    const params = new URLSearchParams(formData);
+    
+    fetch(`/companies/matching/?${params}`)
+        .then(response => response.text())
+        .then(html => {
+            document.querySelector('#candidates-container').innerHTML = html;
+        });
+}
+
+function selectCandidate(candidateId) {
+    if (confirm('آیا مطمئن هستید که می‌خواهید این کاندیدا را انتخاب کنید؟')) {
+        fetch(`/companies/select-candidate/${candidateId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('کاندیدا با موفقیت انتخاب شد!', 'success');
+                location.reload();
+            } else {
+                showAlert('خطا در انتخاب کاندیدا: ' + data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('خطا در انتخاب کاندیدا', 'danger');
+        });
+    }
+}
+
+// Form Enhancements
+function initForms() {
+    // Auto-save forms
+    const autoSaveForms = document.querySelectorAll('.auto-save');
+    autoSaveForms.forEach(form => {
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('change', function() {
+                autoSaveForm(form);
+            });
+        });
+    });
+
+    // Form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+}
+
+function autoSaveForm(form) {
+    const formData = new FormData(form);
+    const url = form.dataset.saveUrl;
+    
+    if (url) {
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAutoSaveIndicator();
+            }
+        });
+    }
+}
+
+function showAutoSaveIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'auto-save-indicator';
+    indicator.innerHTML = '<i class="fas fa-check text-success me-1"></i>ذخیره شد';
+    indicator.style.cssText = 'position: fixed; top: 20px; left: 20px; z-index: 9999; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);';
+    
+    document.body.appendChild(indicator);
+    
+    setTimeout(() => {
+        indicator.remove();
+    }, 2000);
+}
+
+// Animations
+function initAnimations() {
+    // Fade in animation for cards
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in-up');
+            }
+        });
+    });
+
+    document.querySelectorAll('.card').forEach(card => {
+        observer.observe(card);
+    });
+
+    // Counter animation for stats
+    const counters = document.querySelectorAll('.counter');
+    counters.forEach(counter => {
+        const target = parseInt(counter.dataset.target);
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            counter.textContent = Math.floor(current);
+            
+            if (current >= target) {
+                counter.textContent = target;
+                clearInterval(timer);
+            }
+        }, 16);
+    });
+}
+
+// Utility Functions
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function showAlert(message, type = 'info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fa-IR');
+}
+
+// Test System
+function startTest(testId) {
+    if (confirm('آیا آماده شروع آزمون هستید؟')) {
+        window.location.href = `/students/take-test/${testId}/`;
+    }
+}
+
+function submitTestAnswer(questionId, answer) {
+    fetch('/students/submit-answer/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question_id: questionId,
+            answer: answer
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateProgress(data.progress);
+        }
+    });
+}
+
+function updateProgress(progress) {
+    const progressBar = document.querySelector('.test-progress .progress-bar');
+    if (progressBar) {
+        progressBar.style.width = progress + '%';
+        progressBar.textContent = progress + '%';
+    }
+}
+
+// Profile Completion
+function calculateProfileCompletion() {
+    const fields = document.querySelectorAll('.profile-field');
+    let completed = 0;
+    
+    fields.forEach(field => {
+        if (field.value.trim() !== '') {
+            completed++;
+        }
+    });
+    
+    const percentage = Math.round((completed / fields.length) * 100);
+    const progressBar = document.querySelector('.profile-completion .progress-bar');
+    
+    if (progressBar) {
+        progressBar.style.width = percentage + '%';
+        progressBar.textContent = percentage + '%';
+    }
+    
+    return percentage;
+}
+
+// Search and Filter
+function initSearch() {
+    const searchInput = document.querySelector('#search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(performSearch, 300));
+    }
 }
 
 function debounce(func, wait) {
@@ -185,234 +425,24 @@ function debounce(func, wait) {
     };
 }
 
-function showStudentDetails(studentId) {
-    // نمایش جزئیات دانشجو در مدال یا صفحه جدید
-    fetch(`/students/${studentId}/details/`)
-        .then(response => response.json())
-        .then(data => {
-            // نمایش جزئیات
-            console.log("Student details:", data);
-        })
-        .catch(error => {
-            console.error("Error:", error);
+function performSearch() {
+    const query = document.querySelector('#search-input').value;
+    const url = new URL(window.location);
+    url.searchParams.set('search', query);
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            document.querySelector('#search-results').innerHTML = html;
         });
 }
 
-function filterResults() {
-    const searchTerm = document.querySelector(".search-input")?.value.toLowerCase() || "";
-    const filterType = document.querySelector(".filter-type")?.value || "";
-    const filterStatus = document.querySelector(".filter-status")?.value || "";
-    
-    const items = document.querySelectorAll(".filterable-item");
-    
-    items.forEach(item => {
-        const text = item.textContent.toLowerCase();
-        const type = item.dataset.type || "";
-        const status = item.dataset.status || "";
-        
-        const matchesSearch = text.includes(searchTerm);
-        const matchesType = !filterType || type === filterType;
-        const matchesStatus = !filterStatus || status === filterStatus;
-        
-        if (matchesSearch && matchesType && matchesStatus) {
-            item.style.display = "block";
-        } else {
-            item.style.display = "none";
-        }
-    });
-}
-
-function performSearch(query) {
-    if (query.length < 2) return;
-    
-    // نمایش انیمیشن بارگذاری
-    const resultsContainer = document.querySelector(".search-results");
-    if (resultsContainer) {
-        resultsContainer.innerHTML = "<div class=\"text-center\"><div class=\"loading\"></div></div>";
-    }
-    
-    // درخواست جستجو
-    fetch(`/api/search/?q=${encodeURIComponent(query)}`)
-        .then(response => response.json())
-        .then(data => {
-            displaySearchResults(data);
-        })
-        .catch(error => {
-            console.error("Search error:", error);
-        });
-}
-
-function displaySearchResults(results) {
-    const container = document.querySelector(".search-results");
-    if (!container) return;
-    
-    if (results.length === 0) {
-        container.innerHTML = "<div class=\"text-center text-muted\">نتیجه‌ای یافت نشد</div>";
-        return;
-    }
-    
-    let html = "";
-    results.forEach(result => {
-        html += `
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">${result.title}</h5>
-                    <p class="card-text">${result.description}</p>
-                    <a href="${result.url}" class="btn btn-primary">مشاهده جزئیات</a>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-function markAllNotificationsAsRead() {
-    fetch("/notifications/mark-all-read/", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            "Content-Type": "application/json",
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // حذف نشان نوتیفیکیشن
-            const badge = document.querySelector(".notification-badge");
-            if (badge) {
-                badge.style.display = "none";
-            }
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-    });
-}
-
-function updateSelectionCount() {
-    const checkedItems = document.querySelectorAll(".select-item:checked");
-    const count = checkedItems.length;
-    
-    const counter = document.querySelector(".selection-counter");
-    if (counter) {
-        counter.textContent = `${count} مورد انتخاب شده`;
-    }
-    
-    const selectAllCheckbox = document.querySelector(".select-all");
-    if (selectAllCheckbox) {
-        const totalItems = document.querySelectorAll(".select-item").length;
-        selectAllCheckbox.checked = count === totalItems;
-        selectAllCheckbox.indeterminate = count > 0 && count < totalItems;
-    }
-}
-
-function handleFileUpload(file) {
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    // نمایش پیش‌نمایش فایل
-    const preview = document.getElementById("file-preview");
-    if (preview) {
-        preview.innerHTML = `
-            <div class="file-preview">
-                <i class="fas fa-file-upload fa-3x text-primary mb-3"></i>
-                <p class="mb-0">${file.name}</p>
-                <small class="text-muted">${formatFileSize(file.size)}</small>
-                <div class="progress mt-2">
-                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // آپلود فایل
-    fetch("/api/upload/", {
-        method: "POST",
-        body: formData,
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // موفقیت
-            console.log("File uploaded successfully");
-        } else {
-            // خطا
-            console.error("Upload error:", data.error);
-        }
-    })
-    .catch(error => {
-        console.error("Upload error:", error);
-    });
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== "") {
-        const cookies = document.cookie.split(";");
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + "=")) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// توابع مچینگ
-function selectCandidate(studentId, jobRequestId) {
-    fetch("/matching/select-candidate/", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            student_id: studentId,
-            job_request_id: jobRequestId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification("کاندیدا انتخاب شد!", "success");
-        } else {
-            showNotification("خطا در انتخاب کاندیدا", "error");
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        showNotification("خطا در انتخاب کاندیدا", "error");
-    });
-}
-
-function showNotification(message, type = "info") {
-    const alertClass = {
-        "success": "alert-success",
-        "error": "alert-danger",
-        "warning": "alert-warning",
-        "info": "alert-info"
-    }[type] || "alert-info";
-    
-    const notification = document.createElement("div");
-    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // حذف خودکار بعد از 5 ثانیه
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 5000);
-}
+// Export functions for global use
+window.PYSIB = {
+    showAlert,
+    formatNumber,
+    formatDate,
+    startTest,
+    selectCandidate,
+    calculateProfileCompletion
+};

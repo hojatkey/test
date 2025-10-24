@@ -58,6 +58,52 @@ class StudentProfile(models.Model):
         verbose_name='احراز هویت دانشجویی'
     )
     
+    # فیلدهای احراز هویت
+    student_id_document = models.FileField(
+        upload_to='verification/student_id/',
+        null=True,
+        blank=True,
+        verbose_name='کارت دانشجویی'
+    )
+    
+    national_id_document = models.FileField(
+        upload_to='verification/national_id/',
+        null=True,
+        blank=True,
+        verbose_name='کارت ملی'
+    )
+    
+    university_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name='ایمیل دانشگاهی'
+    )
+    
+    additional_info = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='اطلاعات اضافی'
+    )
+    
+    verification_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('not_submitted', 'ارسال نشده'),
+            ('pending', 'در انتظار بررسی'),
+            ('approved', 'تایید شده'),
+            ('rejected', 'رد شده'),
+        ],
+        default='not_submitted',
+        verbose_name='وضعیت احراز هویت'
+    )
+    
+    verification_notes = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='یادداشت‌های احراز هویت'
+    )
+    )
+    
     verification_document = models.FileField(
         upload_to='verification_documents/',
         blank=True,

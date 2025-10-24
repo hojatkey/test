@@ -10,11 +10,14 @@ from .forms import MessageForm
 def notifications(request):
     """لیست نوتیفیکیشن‌ها"""
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    unread_notifications = notifications.filter(is_read=False)
+    unread_count = unread_notifications.count()
     
-    # علامت‌گذاری همه نوتیفیکیشن‌ها به عنوان خوانده شده
-    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
-    
-    return render(request, 'notifications/notifications.html', {'notifications': notifications})
+    return render(request, 'notifications/notifications.html', {
+        'notifications': notifications,
+        'unread_notifications': unread_notifications,
+        'unread_count': unread_count
+    })
 
 
 @login_required
@@ -85,3 +88,72 @@ def message_detail(request, message_id):
         message.save()
     
     return render(request, 'notifications/message_detail.html', {'message': message})
+
+
+# Real-time notifications
+@login_required
+def notification_stream(request):
+    """استریم نوتیفیکیشن‌های real-time"""
+    from django.http import StreamingHttpResponse
+    import json
+    import time
+    
+    def event_stream():
+        while True:
+            # دریافت نوتیفیکیشن‌های جدید
+            new_notifications = Notification.objects.filter(
+                user=request.user,
+                is_read=False
+            ).order_by('-created_at')[:5]
+            
+            for notification in new_notifications:
+                data = {
+                    'id': notification.id,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'type': notification.notification_type,
+                    'created_at': notification.created_at.isoformat()
+                }
+                yield f"data: {json.dumps(data)}\n\n"
+            
+            time.sleep(5)  # بررسی هر 5 ثانیه
+    
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['Connection'] = 'keep-alive'
+    return response
+
+
+# API Views
+@login_required
+def mark_notification_read_api(request, notification_id):
+    """API برای علامت‌گذاری نوتیفیکیشن به عنوان خوانده شده"""
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.save()
+    
+    return JsonResponse({'success': True})
+
+
+@login_required
+def mark_all_read_api(request):
+    """API برای علامت‌گذاری همه نوتیفیکیشن‌ها به عنوان خوانده شده"""
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    
+    return JsonResponse({'success': True})
+
+
+@login_required
+def delete_notification_api(request, notification_id):
+    """API برای حذف نوتیفیکیشن"""
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.delete()
+    
+    return JsonResponse({'success': True})
+
+
+@login_required
+def unread_count_api(request):
+    """API برای تعداد نوتیفیکیشن‌های خوانده نشده"""
+    count = Notification.objects.filter(user=request.user, is_read=False).count()
+    return JsonResponse({'count': count})

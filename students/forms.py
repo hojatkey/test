@@ -70,3 +70,45 @@ class StudentFileForm(forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
         
         self.fields["description"].widget = forms.Textarea(attrs={"rows": 3, "class": "form-control"})
+
+
+class StudentVerificationForm(forms.ModelForm):
+    """فرم احراز هویت دانشجویی"""
+    
+    class Meta:
+        model = StudentProfile
+        fields = ('student_id_document', 'national_id_document', 'university_email', 'additional_info')
+        labels = {
+            'student_id_document': 'کارت دانشجویی یا گواهی اشتغال به تحصیل',
+            'national_id_document': 'کارت ملی یا شناسنامه',
+            'university_email': 'ایمیل دانشگاهی',
+            'additional_info': 'اطلاعات اضافی',
+        }
+        widgets = {
+            'additional_info': forms.Textarea(attrs={'rows': 4, 'placeholder': 'هر اطلاعات اضافی که فکر می‌کنید مفید است...', 'class': 'form-control'}),
+            'university_email': forms.EmailInput(attrs={'placeholder': 'example@university.ac.ir', 'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            if field.widget.__class__ not in [forms.Textarea, forms.EmailInput]:
+                field.widget.attrs.update({'class': 'form-control'})
+    
+    def clean_student_id_document(self):
+        document = self.cleaned_data.get('student_id_document')
+        if document:
+            if document.size > 5 * 1024 * 1024:  # 5MB
+                raise forms.ValidationError('حجم فایل نباید بیشتر از 5 مگابایت باشد.')
+            if not document.content_type in ['application/pdf', 'image/jpeg', 'image/png']:
+                raise forms.ValidationError('فرمت فایل باید PDF، JPG یا PNG باشد.')
+        return document
+    
+    def clean_national_id_document(self):
+        document = self.cleaned_data.get('national_id_document')
+        if document:
+            if document.size > 5 * 1024 * 1024:  # 5MB
+                raise forms.ValidationError('حجم فایل نباید بیشتر از 5 مگابایت باشد.')
+            if not document.content_type in ['application/pdf', 'image/jpeg', 'image/png']:
+                raise forms.ValidationError('فرمت فایل باید PDF، JPG یا PNG باشد.')
+        return document

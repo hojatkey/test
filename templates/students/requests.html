@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}درخواست‌های شغلی - پایسیب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>درخواست‌های شغلی شما</h2>
+    <a href="{% url 'students:create_request' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        درخواست جدید
+    </a>
+</div>
+
+{% if requests %}
+    <div class="row">
+        {% for request in requests %}
+            <div class="col-md-6 mb-4">
+                <div class="card shadow">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ request.get_job_type_display }}</h6>
+                        <div>
+                            {% if request.is_active %}
+                                <span class="badge bg-success">فعال</span>
+                            {% else %}
+                                <span class="badge bg-secondary">غیرفعال</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>نوع کار:</strong>
+                                <p class="text-muted">{{ request.get_work_type_display }}</p>
+                            </div>
+                            <div class="col-6">
+                                <strong>شهر:</strong>
+                                <p class="text-muted">{{ request.city }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>رشته:</strong>
+                                <p class="text-muted">{{ request.field_of_study }}</p>
+                            </div>
+                            <div class="col-6">
+                                <strong>حقوق مورد انتظار:</strong>
+                                <p class="text-muted">{{ request.expected_salary|default:"نامشخص" }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if request.skills %}
+                            <div class="mb-3">
+                                <strong>مهارت‌ها:</strong>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% for skill in request.skills_list %}
+                                        <span class="badge bg-primary">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if request.description %}
+                            <div class="mb-3">
+                                <strong>توضیحات:</strong>
+                                <p class="text-muted">{{ request.description|truncatechars:100 }}</p>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                ایجاد شده: {{ request.created_at|date:"Y/m/d" }}
+                            </small>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'students:edit_request' request.id %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'students:delete_request' request.id %}" class="btn btn-outline-danger" onclick="return confirm('آیا مطمئن هستید؟')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-briefcase text-muted" style="font-size: 4rem;"></i>
+        <h4 class="text-muted mt-3">هنوز درخواستی ایجاد نکرده‌اید</h4>
+        <p class="text-muted">برای شروع، اولین درخواست شغلی خود را ایجاد کنید</p>
+        <a href="{% url 'students:create_request' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>
+            ایجاد درخواست جدید
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

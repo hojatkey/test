@@ -12,22 +12,58 @@ def matching_algorithm(request):
     if request.user.user_type == 'company':
         # برای شرکت‌ها، دانشجویان مناسب را نمایش می‌دهیم
         from students.models import StudentRequest
+        from companies.models import JobRequest
+        from django.core.paginator import Paginator
+        
+        # دریافت درخواست‌های شغلی شرکت
+        company_job_requests = JobRequest.objects.filter(company=request.user, is_active=True)
+        
+        if not company_job_requests.exists():
+            return render(request, 'matching/no_job_requests.html')
+        
+        # فیلترهای جستجو
+        field_filter = request.GET.get('field')
+        job_type_filter = request.GET.get('job_type')
+        city_filter = request.GET.get('city')
+        score_filter = request.GET.get('score')
+        
+        # دریافت درخواست‌های دانشجویان با فیلتر
         student_requests = StudentRequest.objects.filter(is_active=True)
+        
+        if field_filter:
+            student_requests = student_requests.filter(field_of_study__icontains=field_filter)
+        if job_type_filter:
+            student_requests = student_requests.filter(job_type=job_type_filter)
+        if city_filter:
+            student_requests = student_requests.filter(city__icontains=city_filter)
         
         # محاسبه امتیاز مچینگ برای هر دانشجو
         matches = []
         for student_request in student_requests:
-            score = calculate_match_score(student_request, request.user)
-            if score > 0.5:  # فقط دانشجویان با امتیاز بالای 50% نمایش داده می‌شوند
-                matches.append({
-                    'student_request': student_request,
-                    'score': score
-                })
+            for job_request in company_job_requests:
+                match_score = calculate_match_score(student_request, job_request)
+                min_score = int(score_filter) if score_filter else 50
+                
+                if match_score >= min_score:
+                    matches.append({
+                        'student': student_request.user,
+                        'student_request': student_request,
+                        'job_request': job_request,
+                        'match_score': match_score
+                    })
         
         # مرتب‌سازی بر اساس امتیاز
-        matches.sort(key=lambda x: x['score'], reverse=True)
+        matches.sort(key=lambda x: x['match_score'], reverse=True)
         
-        return render(request, 'matching/company_matching.html', {'matches': matches})
+        # صفحه‌بندی
+        paginator = Paginator(matches, 12)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'companies/matching.html', {
+            'candidates': page_obj,
+            'total_matches': len(matches)
+        })
     
     else:
         # برای دانشجویان، شرکت‌های مناسب را نمایش می‌دهیم
@@ -162,3 +198,40 @@ def reject_match(request, match_id):
         messages.success(request, 'مچینگ رد شد!')
     
     return redirect('matching:matches')
+
+
+@login_required
+def select_candidate(request, candidate_id):
+    """انتخاب کاندیدا توسط شرکت"""
+    if request.user.user_type != 'company':
+        return JsonResponse({'success': False, 'message': 'دسترسی غیرمجاز'})
+    
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    try:
+        candidate = User.objects.get(id=candidate_id, user_type='student')
+        
+        # ایجاد مچینگ جدید
+        match = Match.objects.create(
+            student=candidate,
+            company=request.user,
+            match_score=0,  # امتیاز بعداً محاسبه می‌شود
+            status='pending'
+        )
+        
+        # ارسال نوتیفیکیشن به دانشجو
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=candidate,
+            title='درخواست شغلی جدید',
+            message=f'شرکت {request.user.company_profile.company_name} به شما درخواست شغلی داده است.',
+            notification_type='match'
+        )
+        
+        return JsonResponse({'success': True, 'message': 'کاندیدا با موفقیت انتخاب شد'})
+        
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'کاندیدا یافت نشد'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
