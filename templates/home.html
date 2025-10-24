@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}صفحه اصلی - پایسیب{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-gradient-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    پلتفرم مچینگ دانشجو-شرکت
+                </h1>
+                <p class="lead mb-4">
+                    پایسیب پلی است بین دانشجویان جویای کار و شرکت‌های جویای نیرو. 
+                    با استفاده از الگوریتم‌های هوشمند، بهترین مچینگ‌ها را برای شما پیدا می‌کنیم.
+                </p>
+                <div class="d-flex gap-3">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url \"accounts:register\" %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>
+                            شروع کنید
+                        </a>
+                        <a href="{% url \"accounts:login\" %}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            ورود
+                        </a>
+                    {% else %}
+                        <a href="{% url \"accounts:dashboard\" %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            داشبورد
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <i class="fas fa-handshake display-1 text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="display-5 fw-bold">ویژگی‌های پلتفرم</h2>
+                <p class="lead text-muted">چرا پایسیب را انتخاب کنید؟</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-search text-white fs-2"></i>
+                        </div>
+                        <h5 class="card-title">مچینگ هوشمند</h5>
+                        <p class="card-text text-muted">
+                            الگوریتم‌های پیشرفته برای پیدا کردن بهترین مچینگ بین دانشجویان و شرکت‌ها
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-success bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-clipboard-check text-white fs-2"></i>
+                        </div>
+                        <h5 class="card-title">آزمون‌های شخصیتی</h5>
+                        <p class="card-text text-muted">
+                            آزمون‌های استاندارد برای ارزیابی مهارت‌های شخصیتی و افزایش شانس استخدام
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-info bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-shield-alt text-white fs-2"></i>
+                        </div>
+                        <h5 class="card-title">احراز هویت</h5>
+                        <p class="card-text text-muted">
+                            سیستم احراز هویت دانشجویی برای اطمینان از صحت اطلاعات
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How it Works Section -->
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="display-5 fw-bold">چگونه کار می‌کند؟</h2>
+                <p class="lead text-muted">مراحل ساده برای شروع</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <span class="fw-bold fs-4">1</span>
+                    </div>
+                    <h5>ثبت نام</h5>
+                    <p class="text-muted">به عنوان دانشجو یا شرکت ثبت نام کنید</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <span class="fw-bold fs-4">2</span>
+                    </div>
+                    <h5>تکمیل پروفایل</h5>
+                    <p class="text-muted">اطلاعات خود را کامل کنید</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <span class="fw-bold fs-4">3</span>
+                    </div>
+                    <h5>ایجاد درخواست</h5>
+                    <p class="text-muted">درخواست شغلی یا نیرو ایجاد کنید</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <span class="fw-bold fs-4">4</span>
+                    </div>
+                    <h5>مچینگ</h5>
+                    <p class="text-muted">بهترین مچینگ‌ها را دریافت کنید</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <i class="fas fa-users text-primary fs-1"></i>
+                </div>
+                <h3 class="fw-bold">1000+</h3>
+                <p class="text-muted">دانشجو</p>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <i class="fas fa-building text-success fs-1"></i>
+                </div>
+                <h3 class="fw-bold">500+</h3>
+                <p class="text-muted">شرکت</p>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <i class="fas fa-handshake text-info fs-1"></i>
+                </div>
+                <h3 class="fw-bold">200+</h3>
+                <p class="text-muted">مچینگ موفق</p>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <i class="fas fa-star text-warning fs-1"></i>
+                </div>
+                <h3 class="fw-bold">4.8</h3>
+                <p class="text-muted">امتیاز رضایت</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="bg-primary text-white py-5">
+    <div class="container text-center">
+        <h2 class="display-5 fw-bold mb-3">آماده شروع هستید؟</h2>
+        <p class="lead mb-4">همین حالا ثبت نام کنید و فرصت‌های شغلی مناسب را پیدا کنید</p>
+        {% if not user.is_authenticated %}
+            <a href="{% url \"accounts:register\" %}" class="btn btn-light btn-lg">
+                <i class="fas fa-rocket me-2"></i>
+                شروع کنید
+            </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+</style>
+{% endblock %}
